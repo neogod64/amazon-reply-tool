@@ -20,19 +20,22 @@ with st.sidebar:
     if api_key:
         st.session_state.api_key = api_key
         st.success("✅ API Key loaded!")
+    
+    st.markdown("---")
+    st.markdown("**How to use:**")
+    st.markdown("1. Paste your Claude API key\n2. Load sample reviews\n3. Click Generate\n4. View & edit replies")
 
 # Main content
 st.title("🤖 Amazon Seller Reply Generator")
 st.markdown("Automatically generate professional replies to customer reviews using AI")
 
-# Tab 1: Upload Reviews
-tab1, tab2, tab3 = st.tabs(["📤 Upload Reviews", "✨ Generate Replies", "📧 Send Emails"])
+# Tabs
+tab1, tab2, tab3 = st.tabs(["📤 Upload Reviews", "✨ Generate Replies", "📧 Preview"])
 
 with tab1:
-    st.subheader("Step 1: Upload Your Reviews")
+    st.subheader("Step 1: Load Your Reviews")
     
-    st.markdown("---")
-    if st.button("📋 Load Sample Reviews (for testing)", key="sample_data"):
+    if st.button("📋 Load Sample Reviews", key="sample_data"):
         sample_data = {
             'review_id': ['R001', 'R002', 'R003', 'R004', 'R005'],
             'customer_name': ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Emily Davis', 'Robert Wilson'],
@@ -41,7 +44,7 @@ with tab1:
             'review_text': [
                 'Amazing product! Arrived quickly and exactly as described. Highly recommend!',
                 'Good quality but shipping took longer than expected. Still satisfied.',
-                'Excellent! Best purchase I\'ve made this year. Customer service was great too.',
+                'Excellent! Best purchase I have made this year. Customer service was great too.',
                 'Decent product but a bit overpriced. Expected better for this cost.',
                 'Perfect! This is my second purchase. Love the durability.'
             ],
@@ -49,13 +52,15 @@ with tab1:
         }
         st.session_state.reviews_df = pd.DataFrame(sample_data)
         st.success("✅ Sample data loaded! (5 reviews)")
+    
+    if st.session_state.reviews_df is not None:
         st.dataframe(st.session_state.reviews_df, width='stretch')
 
 with tab2:
     st.subheader("Step 2: Generate AI Replies")
     
     if st.session_state.reviews_df is None:
-        st.warning("⚠️ Please load reviews first!")
+        st.warning("⚠️ Please load reviews first in Tab 1!")
     else:
         if not st.session_state.api_key:
             st.error("❌ Please enter your Claude API Key in the sidebar!")
@@ -64,15 +69,14 @@ with tab2:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
-                client = anthropic.Anthropic(api_key=st.session_state.api_key)
-                
-                for idx, row in st.session_state.reviews_df.iterrows():
-                    review_id = row['review_id']
+                try:
+                    client = anthropic.Anthropic(api_key=st.session_state.api_key)
                     
-                    if review_id not in st.session_state.responses:
-                        prompt = f"""You are a professional Amazon seller responding to customer reviews. 
-Generate a warm, professional, and personalized reply to this review. Keep it concise (2-3 sentences max).
-Address the customer by name if positive, offer solution if negative.
+                    for idx, row in st.session_state.reviews_df.iterrows():
+                        review_id = row['review_id']
+                        
+                        if review_id not in st.session_state.responses:
+                            prompt = f"""You are a professional Amazon seller responding to customer reviews. Generate a warm, professional, and personalized reply to this review. Keep it concise (2-3 sentences max). Address the customer by name if positive, offer solution if negative.
 
 Customer Name: {row['customer_name']}
 Product: {row['product_name']}
@@ -80,67 +84,63 @@ Rating: {row['rating']}/5
 Review: {row['review_text']}
 
 Write ONLY the reply message, nothing else."""
-                        
-                        try:
+                            
                             message = client.messages.create(
                                 model="claude-opus-4-1-20250805",
                                 max_tokens=200,
                                 messages=[{"role": "user", "content": prompt}]
                             )
                             st.session_state.responses[review_id] = message.content[0].text
-                        except Exception as e:
-                            st.session_state.responses[review_id] = f"Error: {str(e)}"
+                        
+                        progress = (idx + 1) / len(st.session_state.reviews_df)
+                        progress_bar.progress(progress)
+                        status_text.text(f"Generating reply {idx + 1}/{len(st.session_state.reviews_df)}...")
                     
-                    progress = (idx + 1) / len(st.session_state.reviews_df)
-                    progress_bar.progress(progress)
-                    status_text.text(f"Generating reply {idx + 1}/{len(st.session_state.reviews_df)}...")
+                    status_text.text("✅ All replies generated!")
                 
-                status_text.text("✅ All replies generated!")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
             
-            # Display generated replies
             if st.session_state.responses:
                 st.markdown("---")
-                st.subheader("📝 Review Replies (Edit if needed)")
+                st.subheader("📝 Generated Replies")
                 
                 for idx, row in st.session_state.reviews_df.iterrows():
                     review_id = row['review_id']
                     
-                    with st.expander(f"📌 {row['customer_name']} - {row['product_name']} ({row['rating']}⭐)", expanded=False):
+                    with st.expander(f"📌 {row['customer_name']} - {row['product_name']} ({row['rating']}⭐)"):
                         st.markdown(f"**Email:** {row['customer_email']}")
                         st.markdown(f"**Review:** {row['review_text']}")
                         st.markdown("---")
                         
                         original_reply = st.session_state.responses.get(review_id, "")
                         edited_reply = st.text_area(
-                            "Your reply:",
+                            "AI Reply:",
                             value=original_reply,
-                            height=100,
+                            height=80,
                             key=f"reply_{review_id}"
                         )
                         
                         st.session_state.responses[review_id] = edited_reply
 
 with tab3:
-    st.subheader("Step 3: Send Replies via Email")
+    st.subheader("Step 3: Email Preview")
     
     if not st.session_state.responses:
         st.warning("⚠️ Generate replies first!")
     else:
-        st.info("📧 Email sending ready (foundation for phase 2)")
-        
         preview_data = []
         for idx, row in st.session_state.reviews_df.iterrows():
             preview_data.append({
                 'Customer': row['customer_name'],
                 'Email': row['customer_email'],
                 'Product': row['product_name'],
-                'Reply': st.session_state.responses.get(row['review_id'], '')[:80] + '...'
+                'Reply Preview': st.session_state.responses.get(row['review_id'], '')[:60] + '...'
             })
         
         preview_df = pd.DataFrame(preview_data)
         st.dataframe(preview_df, width='stretch')
-        st.success(f"✅ Ready to send {len(preview_df)} emails!")
+        st.success(f"✅ {len(preview_df)} replies ready to send!")
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit + Claude API")
-```
