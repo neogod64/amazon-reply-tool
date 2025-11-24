@@ -1,0 +1,5 @@
+**File 2: `requirements.txt`** (copy-paste this):
+```
+streamlit==1.32.0
+anthropic==0.21.0
+pandas==2.1.0
