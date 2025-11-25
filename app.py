@@ -54,7 +54,7 @@ with tab1:
         st.success("✅ Sample data loaded! (5 reviews)")
     
     if st.session_state.reviews_df is not None:
-        st.dataframe(st.session_state.reviews_df, width='stretch')
+        st.dataframe(st.session_state.reviews_df, use_container_width=True)
 
 with tab2:
     st.subheader("Step 2: Generate AI Replies")
@@ -139,7 +139,7 @@ with tab3:
             })
         
         preview_df = pd.DataFrame(preview_data)
-        st.dataframe(preview_df, width='stretch')
+        st.dataframe(preview_df, use_container_width=True)
         st.success(f"✅ {len(preview_df)} replies ready to send!")
 
 st.markdown("---")
