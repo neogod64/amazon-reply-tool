@@ -46,6 +46,8 @@ if 'generated_replies' not in st.session_state:
     st.session_state.generated_replies = None
 if 'emails_sent' not in st.session_state:
     st.session_state.emails_sent = []
+if 'last_uploaded_file' not in st.session_state:
+    st.session_state.last_uploaded_file = None
 
 # Tabs
 tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload Reviews", "✨ Generate Replies", "📧 Preview", "🚀 Send Emails"])
@@ -61,7 +63,7 @@ with tab1:
     with col1:
         if st.button("📋 Load Sample Reviews"):
             sample_data = {
-                'customer_name': ['John Smith', 'Sarah Johnson', 'Mike Brown', 'Emily Davis', 'Robert Wilson'],
+                'customer_name': ['Naveen Meena', 'Sarah Johnson', 'Mike Brown', 'Emily Davis', 'Robert Wilson'],
                 'rating': [5, 2, 4, 1, 5],
                 'review_text': [
                     'Excellent product! Exceeded my expectations. Fast delivery too.',
@@ -71,7 +73,7 @@ with tab1:
                     'Amazing! This is exactly what I needed. Will buy again!'
                 ],
                 'customer_email': [
-                    'john.smith@email.com',
+                    'nmeena64@gmail.com',
                     'sarah.j@email.com',
                     'mike.b@email.com',
                     'emily.d@email.com',
@@ -79,21 +81,27 @@ with tab1:
                 ]
             }
             st.session_state.reviews_df = pd.DataFrame(sample_data)
+            st.session_state.last_uploaded_file = None  # Clear uploaded file tracking
             # Reset replies when new data is loaded
             st.session_state.generated_replies = None
             st.session_state.emails_sent = []
             st.success(f"✅ Sample data loaded! ({len(st.session_state.reviews_df)} reviews)")
     
-    # Process uploaded file
-    if uploaded_file:
-        try:
-            st.session_state.reviews_df = pd.read_csv(uploaded_file)
-            # Reset replies when new data is loaded
-            st.session_state.generated_replies = None
-            st.session_state.emails_sent = []
-            st.success(f"✅ File uploaded! ({len(st.session_state.reviews_df)} reviews)")
-        except Exception as e:
-            st.error(f"Error reading file: {str(e)}")
+    # Process uploaded file ONLY if it's a new file
+    if uploaded_file is not None:
+        # Check if this is a new file
+        file_id = uploaded_file.file_id if hasattr(uploaded_file, 'file_id') else uploaded_file.name
+        
+        if file_id != st.session_state.last_uploaded_file:
+            try:
+                st.session_state.reviews_df = pd.read_csv(uploaded_file)
+                st.session_state.last_uploaded_file = file_id
+                # Reset replies when new data is loaded
+                st.session_state.generated_replies = None
+                st.session_state.emails_sent = []
+                st.success(f"✅ File uploaded! ({len(st.session_state.reviews_df)} reviews)")
+            except Exception as e:
+                st.error(f"Error reading file: {str(e)}")
     
     # Display loaded data
     if st.session_state.reviews_df is not None:
