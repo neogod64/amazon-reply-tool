@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import anthropic
+import httpx
 
 st.set_page_config(page_title="Amazon Reply Generator", page_icon="🤖", layout="wide")
 
@@ -80,8 +81,12 @@ with tab2:
     else:
         if st.button("✨ Generate Replies", type="primary"):
             try:
-                # Initialize Anthropic client (FIXED - removed proxies parameter)
-                client = anthropic.Anthropic(api_key=api_key)
+                # Initialize Anthropic client with custom http client (no proxies)
+                http_client = httpx.Client(proxies=None)
+                client = anthropic.Anthropic(
+                    api_key=api_key,
+                    http_client=http_client
+                )
                 
                 replies = []
                 progress_bar = st.progress(0)
@@ -149,3 +154,13 @@ with tab3:
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit + Claude API")
+```
+
+---
+
+## Also update `requirements.txt`:
+```
+streamlit==1.39.0
+anthropic==0.39.0
+pandas==2.2.3
+httpx==0.27.0
