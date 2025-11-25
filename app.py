@@ -154,13 +154,3 @@ with tab3:
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit + Claude API")
-```
-
----
-
-## Also update `requirements.txt`:
-```
-streamlit==1.39.0
-anthropic==0.39.0
-pandas==2.2.3
-httpx==0.27.0
