@@ -79,12 +79,18 @@ with tab1:
                 ]
             }
             st.session_state.reviews_df = pd.DataFrame(sample_data)
+            # Reset replies when new data is loaded
+            st.session_state.generated_replies = None
+            st.session_state.emails_sent = []
             st.success(f"✅ Sample data loaded! ({len(st.session_state.reviews_df)} reviews)")
     
     # Process uploaded file
     if uploaded_file:
         try:
             st.session_state.reviews_df = pd.read_csv(uploaded_file)
+            # Reset replies when new data is loaded
+            st.session_state.generated_replies = None
+            st.session_state.emails_sent = []
             st.success(f"✅ File uploaded! ({len(st.session_state.reviews_df)} reviews)")
         except Exception as e:
             st.error(f"Error reading file: {str(e)}")
@@ -161,6 +167,8 @@ with tab3:
     
     if st.session_state.generated_replies is None:
         st.warning("⚠️ Please generate replies first in the 'Generate Replies' tab")
+    elif len(st.session_state.generated_replies) != len(st.session_state.reviews_df):
+        st.error("⚠️ Data mismatch detected. Please regenerate replies in the 'Generate Replies' tab")
     else:
         preview_data = []
         for idx, row in st.session_state.reviews_df.iterrows():
@@ -184,6 +192,8 @@ with tab4:
         st.warning("⚠️ Please generate replies first in the 'Generate Replies' tab")
     elif not sender_email or not sender_password:
         st.warning("⚠️ Please configure your Gmail settings in the sidebar")
+    elif len(st.session_state.generated_replies) != len(st.session_state.reviews_df):
+        st.error("⚠️ Data mismatch detected. Please regenerate replies in the 'Generate Replies' tab")
     else:
         st.info(f"📧 Ready to send {len(st.session_state.generated_replies)} emails from **{sender_email}**")
         
